@@ -1,0 +1,11 @@
+{
+    "name": "torrent",
+    "manifest_version": 2,
+    "version": "1.0",
+    "description": "add torrent csfd!",
+    "permissions": ["tabs", "https://tracker.cztorrent.net/*"],
+    "content_scripts" : [{
+        "matches" : [ "https://tracker.cztorrent.net/torrents*"],
+        "js" : ["jquery-2.2.4.min.js", "browser.js"]
+    }]
+}

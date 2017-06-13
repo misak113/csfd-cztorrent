@@ -1,0 +1,14 @@
+{
+  "name": "csfd-cztorrent",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {},
+  "author": "Michael Zabka <zabka.michael@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "cors-anywhere": "^0.4.0"
+  }
+}
