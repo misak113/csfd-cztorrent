@@ -1,6 +1,7 @@
 
 var anonymPrefix = 'http://anonymz.com/?';
 var proxyPrefixes = ['http://localhost:8888/', 'https://crossorigin.me/', 'https://cors-anywhere.herokuapp.com/'];
+var csfdUrl = 'http://www.csfd.cz';
 var proxyPrefixIndex = 0;
 
 function csfd($pageTorrs) {
@@ -61,7 +62,7 @@ $pageTorrs.each(function () {
 			url: detailUrl,
 			success: function (response) {
 				var $detailHtml = $(response);
-				var csfdAnonymHref = $detailHtml.find("a[href*='" + anonymPrefix + "http://www.csfd.cz/film/']").attr('href');
+				var csfdAnonymHref = $detailHtml.find("a[href*='" + anonymPrefix + csfdUrl + "/film/']").attr('href');
 				if (csfdAnonymHref) {
 					var csfdHref = csfdAnonymHref.substring(anonymPrefix.length);
 					localStorage.setItem(detailUrl, csfdHref);
@@ -104,3 +105,37 @@ var discoverPages = function () {
 	});
 };
 discoverPages();
+
+function filter() {
+	var $filterForm = $('<form/>');
+	var $inputGenre = $('<input/>').attr('id', 'input-genre').attr('placeholder', 'Genre');
+	var $inputMinRating = $('<input/>').attr('id', 'input-minRating').attr('type', 'number').attr('placeholder', 'Min. ratting');
+	var $buttonFilter = $('<button/>').text('Filter');
+	$filterForm.append($inputGenre).append($inputMinRating).append($buttonFilter);
+	$('.search_box').after($filterForm);
+	$filterForm.on('submit', function (ev) {
+		ev.preventDefault();
+		var filteredUris = [];
+		var genre = $inputGenre.val();
+		var minRating = parseInt($inputMinRating.val());
+		for (var uri in localStorage) {
+			if (uri.indexOf(csfdUrl) === 0) {
+				var stats = JSON.parse(localStorage[uri]);
+				if (stats.genre.indexOf(genre) !== -1 && stats.rating >= minRating) {
+					filteredUris.push(uri);
+				}
+			}
+		}
+		for (var uri of filteredUris) {
+			var stats = JSON.parse(localStorage[uri]);
+			var $empty = $('<td/>');
+			var $name = $('<td/>').attr('colspan', 3).text(uri);
+			var $genre = $('<td/>').attr('colspan', 2).text(stats.genre);
+			var $rating = $('<td/>').attr('colspan', 1).text(stats.rating + '%');
+			var $tableRow = $('<tr/>').after($empty).after($empty).after($empty).append($name).append($genre).append($rating);
+			$('#torrenty .popisy').after($tableRow);
+		}
+	});
+}
+
+filter();
