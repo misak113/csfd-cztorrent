@@ -32,7 +32,9 @@ $pageTorrs.each(function () {
 					var $csfdHtml = $(response);
 					var rating = $csfdHtml.find("#rating meta[itemprop='ratingValue']").attr('content');
 					var genre = $csfdHtml.find('.content .info .genre').text();
-					localStorage.setItem(csfdHref, JSON.stringify({ rating: rating, genre: genre }));
+					var origin = $csfdHtml.find('.content .info .origin').text();
+					var name = $csfdHtml.find('.episode.header h1').text();
+					localStorage.setItem(csfdHref, JSON.stringify({ rating: rating, genre: genre, name: name, origin: origin }));
 					updateDom(rating, genre);
 				},
 				error: function (response) {
@@ -46,6 +48,9 @@ $pageTorrs.each(function () {
 		if (cachedItem !== null) {
 			var cachedValues = JSON.parse(cachedItem);
 			updateDom(cachedValues.rating, cachedValues.genre);
+			if (!cachedValues.name) {
+				fetchCsfd();
+			}
 		} else {
 			fetchCsfd();
 		}
@@ -106,33 +111,68 @@ var discoverPages = function () {
 };
 discoverPages();
 
+function nameFromCsfdUri(csfdUri) {
+	return csfdUri.substring(csfdUrl.length + '/film/'.length, csfdUri.length - 1).replace(/\d+/g, '').replace(/-/g, ' ');
+}
+
+function allIsPartOfString(string, allContain) {
+	for (var contain of allContain) {
+		if (string.toLowerCase().indexOf(contain) === -1) {
+			return false;
+		}
+	}
+	return true;
+}
+
 function filter() {
+	var torrentDetailMapByCsfdUri = Object.keys(localStorage).reduce(function (index, detailUri) {
+		index[localStorage[detailUri]] = detailUri;
+		return index;
+	}, {});
+
 	var $filterForm = $('<form/>');
-	var $inputGenre = $('<input/>').attr('id', 'input-genre').attr('placeholder', 'Genre');
-	var $inputMinRating = $('<input/>').attr('id', 'input-minRating').attr('type', 'number').attr('placeholder', 'Min. ratting');
+	var $inputGenre = $('<input/>').attr('id', 'input-genre').attr('placeholder', 'Genre').val(localStorage['input-genre']);
+	var $inputMinRating = $('<input/>').attr('id', 'input-minRating').attr('type', 'number').attr('placeholder', 'Min. ratting').val(localStorage['input-minRating']);
 	var $buttonFilter = $('<button/>').text('Filter');
 	$filterForm.append($inputGenre).append($inputMinRating).append($buttonFilter);
 	$('.search_box').after($filterForm);
 	$filterForm.on('submit', function (ev) {
 		ev.preventDefault();
 		var filteredUris = [];
-		var genre = $inputGenre.val();
-		var minRating = parseInt($inputMinRating.val());
+		var genre = $inputGenre.val().toLowerCase();
+		var minRating = $inputMinRating.val() ? parseInt($inputMinRating.val()) : 0;
+		localStorage.setItem('input-genre', genre);
+		localStorage.setItem('input-minRating', minRating);
 		for (var uri in localStorage) {
 			if (uri.indexOf(csfdUrl) === 0) {
 				var stats = JSON.parse(localStorage[uri]);
-				if (stats.genre.indexOf(genre) !== -1 && stats.rating >= minRating) {
+				if (allIsPartOfString(stats.genre, genre.split(' ')) && stats.rating >= minRating) {
 					filteredUris.push(uri);
 				}
 			}
 		}
-		for (var uri of filteredUris) {
-			var stats = JSON.parse(localStorage[uri]);
-			var $empty = $('<td/>');
-			var $name = $('<td/>').attr('colspan', 3).text(uri);
-			var $genre = $('<td/>').attr('colspan', 2).text(stats.genre);
-			var $rating = $('<td/>').attr('colspan', 1).text(stats.rating + '%');
-			var $tableRow = $('<tr/>').after($empty).after($empty).after($empty).append($name).append($genre).append($rating);
+		$('.filtered-row').remove();
+		for (var csfdUri of filteredUris) {
+			var stats = JSON.parse(localStorage[csfdUri]);
+			var $empty = $('<td/>').text(' ');
+			var $genre = $('<td/>').addClass('categorie').attr('colspan', 2).text(stats.genre);
+			var detailUri = torrentDetailMapByCsfdUri[csfdUri];
+			var $nameLink = $('<a/>').attr('href', detailUri).css('font-size', '150%').css('font-weight', 'bold').text(stats.name || nameFromCsfdUri(csfdUri) || '?');
+			var $origin = $('<div/>').text(stats.origin || '?');
+			var $csfd = $('<a/>').attr('href', csfdUri).text('ČSFD');
+			var $name = $('<td/>').addClass('detaily').attr('colspan', 3).append($nameLink).append($origin).append($csfd);
+			var $rating = $('<td/>').addClass('coment').attr('colspan', 1).text(stats.rating + '%');
+			var $tableRow = $('<tr/>').addClass('filtered-row').addClass('torr_hover')
+				.after($empty)
+				.append($genre)
+				.after($empty)
+				.append($name)
+				.after($empty)
+				.append($rating)
+				.after($empty)
+				.after($empty)
+				.after($empty)
+				;
 			$('#torrenty .popisy').after($tableRow);
 		}
 	});
