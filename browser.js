@@ -1,6 +1,6 @@
 
 var anonymPrefix = 'http://anonymz.com/?';
-var proxyPrefixes = ['http://localhost:8888/', 'https://crossorigin.me/', 'https://cors-anywhere.herokuapp.com/'];
+var proxyPrefixes = [/*'http://localhost:8888/', */'https://crossorigin.me/', 'https://cors-anywhere.herokuapp.com/'];
 var csfdUrl = 'http://www.csfd.cz';
 var proxyPrefixIndex = 0;
 
